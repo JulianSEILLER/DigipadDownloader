@@ -1,77 +1,94 @@
 # 📦 Digipad Downloader
 
-**Digipad Downloader** est une application web locale open-source développée en Python (Flask) et Selenium. Elle permet d'analyser, d'extraire et de télécharger rapidement sous forme d'archive ZIP toutes les ressources contenues dans un mur collaboratif **Digipad** (proposé par *La Digitale*).
+Application web locale qui récupère toutes les ressources d'un mur **Digipad** (*La Digitale*) et les télécharge en une seule archive ZIP, rangées par colonne.
+
+Développée en **Python (Flask)** avec **Selenium**, pour sauvegarder en quelques secondes des cours partagés sur Digipad, au lieu d'ouvrir chaque document un par un.
+
+<!-- Ajouter ici une capture de l'interface, par exemple :
+![Aperçu de Digipad Downloader](docs/apercu.png)
+-->
+
+---
 
 ## ✨ Fonctionnalités
 
-- 🔍 **Extraction Profonde :** Ne se contente pas des vignettes (images), le script simule des clics pour révéler et télécharger les véritables documents PDF, Word, Excel, etc.
-- ⚡ **Téléchargement Ultra-Rapide :** Utilise le multi-threading pour télécharger plusieurs fichiers simultanément.
-- 📂 **Respect de la Structure :** Les fichiers dans l'archive `.zip` finale sont automatiquement rangés dans des dossiers correspondant aux colonnes du Digipad.
-- 🔐 **Gestion des Mots de Passe :** Capable d'analyser les Digipads privés si vous possédez le code d'accès.
-- 💀 **Détection des Liens Morts :** Vérifie automatiquement la santé des liens externes (notamment les partages académiques *Nuage*) avant le téléchargement pour éviter les erreurs.
-- 🌐 **Deux modes d'analyse :** Par lien URL direct (via Selenium) ou par injection du code source HTML (pour les accès très restreints).
+- 🔍 **Récupération des vrais documents** : l'application ne s'arrête pas aux vignettes. Elle ouvre chaque bloc du mur pour récupérer le lien du fichier d'origine (PDF, Word, Excel, PowerPoint…).
+- 📂 **Structure conservée** : dans l'archive ZIP, les fichiers sont rangés dans un dossier par colonne du Digipad.
+- 🔐 **Murs protégés** : prise en charge des Digipads privés, à condition de connaître le code d'accès.
+- 💀 **Détection des liens morts** : chaque lien est vérifié avant le téléchargement. Un partage *Nuage* (apps.education.fr) supprimé est signalé au lieu de faire échouer l'archive.
+- ⚡ **Téléchargement parallèle** : jusqu'à 10 fichiers téléchargés en même temps (multithreading).
+- ✅ **Sélection des fichiers** : l'interface liste toutes les ressources trouvées, et vous choisissez celles à mettre dans l'archive.
+- 🌐 **Deux modes d'analyse** :
+  - **Par lien** : l'application ouvre le Digipad dans un navigateur sans interface (Selenium) ;
+  - **Par code source HTML** : pour les murs auxquels Selenium ne peut pas accéder. Dans ce mode, seuls les fichiers *Nuage* sont téléchargés en entier ; pour les autres documents, seule la vignette est récupérée.
 
-## 🛠️ Prérequis
+## 🛠️ Stack technique
 
-Pour faire fonctionner ce projet sur votre machine, vous devez avoir installé :
-- **Python 3.8+**
-- **Google Chrome** (Selenium l'utilisera en arrière-plan)
+| Rôle | Technologie |
+|---|---|
+| Serveur web | Python, Flask |
+| Navigation automatisée | Selenium (Chrome sans interface), webdriver-manager |
+| Analyse du HTML | BeautifulSoup |
+| Téléchargements | requests, `concurrent.futures` (multithreading) |
+| Interface | HTML, Tailwind CSS, JavaScript |
+
+## ⚙️ Fonctionnement
+
+1. **Analyse** (`/index-page`) : Selenium ouvre le mur, saisit le code d'accès si besoin, puis exécute un script JavaScript qui parcourt chaque bloc. Ce script clique sur les documents pour faire apparaître leur vrai lien de téléchargement.
+2. **Vérification** : les liens trouvés sont testés en parallèle, et les liens morts sont marqués dans l'interface.
+3. **Archive** (`/download-zip`) : les fichiers sélectionnés sont téléchargés en parallèle, puis l'archive ZIP est créée en mémoire et envoyée au navigateur, sans fichier temporaire sur le disque.
+
+## 📋 Prérequis
+
+- **Python 3.8** ou plus récent
+- **Google Chrome** installé (Selenium l'utilise en arrière-plan ; le pilote ChromeDriver est téléchargé automatiquement)
 
 ## 🚀 Installation
 
-1. Clonez ce dépôt sur votre machine locale :
-   ```bash
-   git clone https://github.com/votre-pseudo/DigipadDownloader.git
-   cd DigipadDownloader
-   ```
+```bash
+git clone https://github.com/JulianSEILLER/DigipadDownloader.git
+cd DigipadDownloader
 
-2. Il est recommandé de créer un environnement virtuel :
-   ```bash
-   python -m venv venv
-   # Sur Windows :
-   venv\Scripts\activate
-   # Sur macOS/Linux :
-   source venv/bin/activate
-   ```
+# Environnement virtuel (recommandé)
+python -m venv venv
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # macOS / Linux
 
-3. Installez les dépendances requises :
-   ```bash
-   pip install -r requirements.txt
-   ```
+pip install -r requirements.txt
+```
 
 ## 💻 Utilisation
 
-1. Lancez le serveur Flask :
+1. Lancez le serveur :
    ```bash
    python app.py
    ```
+2. Ouvrez **http://127.0.0.1:5000** dans votre navigateur.
+3. Collez l'adresse du Digipad, ajoutez le code d'accès si le mur est protégé, puis cliquez sur **Analyser**.
+4. Cochez les fichiers à garder et cliquez sur **Télécharger la sélection (ZIP)**.
 
-2. Ouvrez votre navigateur et rendez-vous à l'adresse suivante :
-   **http://127.0.0.1:5000**
+## 🗂️ Structure du projet
 
-3. Collez l'URL de votre Digipad, saisissez le mot de passe si nécessaire, et cliquez sur **Analyser**.
-4. Sélectionnez les fichiers que vous souhaitez conserver et cliquez sur **Télécharger la sélection (ZIP)**.
+```
+DigipadDownloader/
+├── app.py             # Serveur Flask : analyse du mur, vérification des liens, création du ZIP
+├── templates/
+│   └── index.html     # Interface (Tailwind CSS)
+└── requirements.txt   # Dépendances Python
+```
 
-## ⚠️ Avertissement Légal & Éthique
+## ⚠️ Usage responsable
 
-**Ce projet a été créé à des fins strictement éducatives et pour un usage personnel (ex: sauvegarde locale de cours auxquels vous avez légitimement accès).**
+Ce projet est destiné à un **usage personnel**, par exemple pour sauvegarder des cours auxquels on a légitimement accès.
 
-- Le "scraping" (l'extraction automatisée de données) peut être contraire aux Conditions Générales d'Utilisation (CGU) de *La Digitale* ou des hébergeurs tiers.
-- **Ne déployez pas ce projet sur un serveur web public.** Une utilisation massive depuis une seule adresse IP pourrait saturer les serveurs de l'association *La Digitale* (qui est un service gratuit et associatif) et entraîner un bannissement.
-- Les auteurs et contributeurs de ce dépôt déclinent toute responsabilité en cas de mauvaise utilisation de cet outil, de violation des droits d'auteur ou d'infraction aux CGU des plateformes cibles.
-
-## 🤝 Contribuer
-
-Les contributions sont les bienvenues ! 
-1. Forkez le projet
-2. Créez votre branche (`git checkout -b feature/NouvelleFonctionnalite`)
-3. Commitez vos changements (`git commit -m 'Ajout de la NouvelleFonctionnalite'`)
-4. Pushez vers la branche (`git push origin feature/NouvelleFonctionnalite`)
-5. Ouvrez une Pull Request
+- L'extraction automatisée de données peut être contraire aux conditions d'utilisation de *La Digitale* ou des hébergeurs des fichiers.
+- **Ne déployez pas cette application sur un serveur public** : un usage massif depuis une même adresse IP chargerait les serveurs de *La Digitale*, un service gratuit et associatif.
+- L'auteur décline toute responsabilité en cas de mauvaise utilisation de l'outil.
 
 ## 📄 Licence
 
-**Tous droits réservés.** Ce code est fourni à des fins éducatives et d'usage personnel. Aucune licence open-source n'est accordée pour la redistribution ou la modification publique.
+**Tous droits réservés.** Le code est consultable à des fins de démonstration et d'usage personnel. Sa redistribution ou sa modification publique n'est pas autorisée.
 
 ---
-*Fait avec ❤️ pour simplifier la vie des étudiants et enseignants.*
+
+Développé par **Julian SEILLER** · [Portfolio](https://julianseiller.vercel.app) · [LinkedIn](https://linkedin.com/in/julianseiller)
